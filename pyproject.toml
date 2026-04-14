@@ -1,0 +1,95 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "your-project"  # TODO: 프로젝트 이름으로 변경
+version = "0.1.0"
+description = "Python 3.12 자동화 검사 시스템"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "Junghee Im", email = "imjion.dev@gmail.com"}]
+keywords = ["automation", "lint", "format", "testing"]
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.8.0",
+    "pre-commit>=3.8.0",
+    "commitizen>=3.29.0",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "mypy>=1.10",
+]
+
+[tool.ruff]
+target-version = "py312"
+src = ["src", "tests"]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle 에러
+    "W",      # pycodestyle 경고
+    "F",      # Pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "PTH",    # flake8-use-pathlib
+    "RUF",    # Ruff 자체 규칙
+    "S",      # flake8-bandit (보안)
+    "T20",    # flake8-print (print 감지)
+]
+ignore = ["E501"]
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**/*.py" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["your_project"]  # TODO: 프로젝트 패키지명으로 변경
+combine-as-imports = true
+force-sort-within-sections = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--cov=src --cov-report=term-missing -v"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_provider = "pep621"
+version_files = [
+    "pyproject.toml:version",
+]
+
+[tool.commitizen.customize]
+schema = """
+<type>(<scope>): <subject>
+<BLANK LINE>
+<body>
+<BLANK LINE>
+<footer>
+"""
+schema_pattern = "^(feat|fix|docs|refactor|chore|revert|perf)(\\(\\w+\\))?!?: .{1,100}"
+bump_pattern = "^(feat|fix|perf|refactor)"
+bump_map = { "feat" = "MINOR", "fix" = "PATCH", "perf" = "PATCH", "refactor" = "PATCH" }
