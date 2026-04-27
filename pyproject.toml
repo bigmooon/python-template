@@ -16,7 +16,7 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.8.0",
+    "ruff==0.8.4",          # .pre-commit-config.yaml의 ruff rev와 정확히 동일하게 핀
     "pre-commit>=3.8.0",
     "commitizen>=3.29.0",
     "pytest>=8.0",
@@ -44,14 +44,18 @@ select = [
     "RUF",    # Ruff 자체 규칙
     "S",      # flake8-bandit (보안)
     "T20",    # flake8-print (print 감지)
+    "PERF",   # perflint — 루프 성능 안티패턴
+    "TRY",    # tryceratops — 예외 처리 안티패턴
 ]
-ignore = ["E501"]
+# E501(line length)은 Ruff formatter가 직접 관리하므로 ignore 불필요
 fixable = ["ALL"]
 unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"tests/**/*.py" = ["S101"]
+"tests/**/*.py" = ["S101", "T20"]
+# scripts/는 CLI 도구이므로 print/subprocess 사용 허용
+"scripts/**/*.py" = ["T20", "S603", "S607"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["your_project"]  # TODO: 프로젝트 패키지명으로 변경
@@ -66,7 +70,22 @@ skip-magic-trailing-comma = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "--cov=src --cov-report=term-missing -v"
+addopts = "--strict-markers --strict-config -v"
+# coverage는 [tool.coverage.*]에서 별도 관리.
+# Makefile의 test/ci-check 타겟이 명시적으로 --cov를 부착한다.
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
 
 [tool.mypy]
 python_version = "3.12"
