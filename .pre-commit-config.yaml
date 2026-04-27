@@ -1,8 +1,8 @@
 default_language_version:
   python: python3.12
 
-default_stages: [pre-commit] # commit 단계에서만 실행
-fail_fast: false # 오류 발생 시 즉시 종료
+default_stages: [pre-commit]
+fail_fast: false
 
 repos:
   # ==========================================
@@ -45,6 +45,16 @@ repos:
       - id: detect-private-key
         name: "Private 키 탐지"
 
+      # AWS 자격증명 탐지
+      - id: detect-aws-credentials
+        name: "AWS 자격증명 탐지"
+        args: [--allow-missing-credentials]
+
+      # 대용량 파일 차단 (1MB)
+      - id: check-added-large-files
+        name: "대용량 파일 차단"
+        args: [--maxkb=1024]
+
   # ==========================================
   # 2. Ruff Linter
   # ==========================================
@@ -64,7 +74,21 @@ repos:
         name: "Ruff 포매터"
 
   # ==========================================
-  # 4. Commitizen
+  # 4. 자동 수정 결과를 같은 커밋에 stage
+  #    (반드시 ruff/ruff-format 다음에 위치)
+  #    stdlib만 사용하므로 어떤 python3든 OK.
+  # ==========================================
+  - repo: local
+    hooks:
+      - id: stage-fixes
+        name: "자동 수정 파일 stage"
+        entry: python3 scripts/stage_fixes.py
+        language: system
+        stages: [pre-commit]
+        pass_filenames: true
+
+  # ==========================================
+  # 5. Commitizen (commit-msg 단계)
   # ==========================================
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v3.29.1
@@ -72,3 +96,28 @@ repos:
       - id: commitizen
         name: "Commitizen 메시지 검증"
         stages: [commit-msg]
+
+  # ==========================================
+  # 6. Pre-push 게이트 (테스트 + 타입체크)
+  #    빠른 모드 — 30s 이내로 --no-verify 우회 유혹 차단.
+  #    80% 커버리지 게이트는 CI에서만 적용.
+  #    프로젝트 venv 경로를 명시 (Makefile과 일관).
+  # ==========================================
+  - repo: local
+    hooks:
+      - id: pytest-push
+        name: "pytest (push 전, 빠른 모드)"
+        entry: .venv/bin/python -m pytest -x --no-cov -q
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
+
+      - id: mypy-push
+        name: "mypy (push 전)"
+        entry: .venv/bin/python -m mypy src
+        language: system
+        types: [python]
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true

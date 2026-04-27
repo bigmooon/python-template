@@ -42,7 +42,8 @@ COMMITIZEN := $(VENV_BIN)/cz
 .DEFAULT_GOAL := help
 
 .PHONY: help install install-dev install-hooks clean lint format \
-        check ci-check validate test typecheck commit bump-version pre-commit run-all update-hooks
+        check ci-check validate test typecheck commit bump-version \
+        pre-commit run-all update-hooks quick-check full-check list-checks init
 
 # ============================================================================
 # help - 사용 가능한 명령어 목록
@@ -65,9 +66,15 @@ help:
 	@echo "$(COLOR_GREEN)통합 명령어:$(COLOR_RESET)"
 	@echo "  make check           - 코드 스타일 검사 (lint+format)"
 	@echo "  make validate        - 커밋 전 전체 검증 (lint+format+test+typecheck)"
-	@echo "  make ci-check        - CI용 검사 (수정 없이 검증만)"
+	@echo "  make ci-check        - CI용 검사 (수정 없이 검증만, 80%+ coverage)"
+	@echo "  make quick-check     - commit 시뮬 (pre-commit 단계 훅)"
+	@echo "  make full-check      - push 시뮬 (pre-commit + pre-push 단계 훅)"
+	@echo "  make list-checks     - 정의된 모든 검사 목록 보기"
 	@echo "  make pre-commit      - pre-commit 훅 수동 실행"
 	@echo "  make run-all         - 모든 파일에 pre-commit 실행"
+	@echo ""
+	@echo "$(COLOR_GREEN)프로젝트 초기화:$(COLOR_RESET)"
+	@echo "  make init NAME=foo   - your_project 플레이스홀더를 'foo'로 일괄 치환"
 	@echo ""
 	@echo "$(COLOR_GREEN)Git 관련:$(COLOR_RESET)"
 	@echo "  make commit          - 대화형 커밋 생성 (Conventional Commits)"
@@ -105,9 +112,10 @@ install-dev:
 # ============================================================================
 install-hooks:
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)Git 훅 설치 중...$(COLOR_RESET)"
-	@$(PRE_COMMIT) install
+	@$(PRE_COMMIT) install --hook-type pre-commit
 	@$(PRE_COMMIT) install --hook-type commit-msg
-	@echo "$(COLOR_GREEN)✓ Git 훅 설치 완료$(COLOR_RESET)"
+	@$(PRE_COMMIT) install --hook-type pre-push
+	@echo "$(COLOR_GREEN)✓ Git 훅 설치 완료 (pre-commit, commit-msg, pre-push)$(COLOR_RESET)"
 
 # ============================================================================
 # clean - 임시 파일 및 캐시 삭제
@@ -161,22 +169,22 @@ validate: lint format test typecheck
 	@echo ""
 
 # ============================================================================
-# ci-check - CI용 검사 (수정 없이 검증만)
+# ci-check - CI용 검사 (수정 없이 검증만, coverage 80% 게이트)
 # ============================================================================
 ci-check:
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)CI 검사 중...$(COLOR_RESET)"
 	@$(RUFF) check $(ALL_DIRS) --no-fix
 	@$(RUFF) format $(ALL_DIRS) --check
 	@$(VENV_BIN)/mypy $(SRC_DIR)
-	@$(VENV_BIN)/pytest --no-header -q
+	@$(VENV_BIN)/pytest --cov=$(SRC_DIR) --cov-report=term-missing --no-header -q
 	@echo "$(COLOR_GREEN)✓ CI 검사 통과$(COLOR_RESET)"
 
 # ============================================================================
-# test - 테스트 실행
+# test - 테스트 실행 (coverage 포함, 80% 게이트)
 # ============================================================================
 test:
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)테스트 실행 중...$(COLOR_RESET)"
-	@$(VENV_BIN)/pytest
+	@$(VENV_BIN)/pytest --cov=$(SRC_DIR) --cov-report=term-missing
 	@echo "$(COLOR_GREEN)✓ 테스트 완료$(COLOR_RESET)"
 
 # ============================================================================
@@ -234,6 +242,44 @@ update-hooks:
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)Pre-commit 훅 업데이트 중...$(COLOR_RESET)"
 	@$(PRE_COMMIT) autoupdate
 	@echo "$(COLOR_GREEN)✓ 훅 업데이트 완료$(COLOR_RESET)"
+
+# ============================================================================
+# quick-check - commit 시뮬레이션 (pre-commit 단계 훅 전체)
+# ============================================================================
+quick-check:
+	@echo "$(COLOR_BOLD)$(COLOR_BLUE)Quick check (commit 시뮬)...$(COLOR_RESET)"
+	@$(PRE_COMMIT) run --all-files --hook-stage pre-commit
+	@echo "$(COLOR_GREEN)✓ commit 단계 통과$(COLOR_RESET)"
+
+# ============================================================================
+# full-check - push 시뮬레이션 (pre-commit + pre-push 모두)
+# ============================================================================
+full-check:
+	@echo "$(COLOR_BOLD)$(COLOR_BLUE)Full check (push 시뮬)...$(COLOR_RESET)"
+	@$(PRE_COMMIT) run --all-files --hook-stage pre-commit
+	@$(PRE_COMMIT) run --all-files --hook-stage pre-push
+	@echo "$(COLOR_GREEN)✓ commit + push 단계 모두 통과$(COLOR_RESET)"
+
+# ============================================================================
+# list-checks - 정의된 모든 검사를 한눈에 보기
+# ============================================================================
+list-checks:
+	@echo "$(COLOR_BOLD)$(COLOR_CYAN)정의된 pre-commit 훅 목록:$(COLOR_RESET)"
+	@$(PRE_COMMIT) run --all-files --verbose --hook-stage manual 2>/dev/null || true
+	@echo ""
+	@echo "$(COLOR_GREEN)단계별 훅 위치는 .pre-commit-config.yaml의 stages 필드 참고$(COLOR_RESET)"
+
+# ============================================================================
+# init - your_project 플레이스홀더를 새 이름으로 일괄 치환
+#   사용법: make init NAME=my_app
+# ============================================================================
+init:
+ifndef NAME
+	$(error NAME 변수가 필요합니다. 예: make init NAME=my_app)
+endif
+	@echo "$(COLOR_BOLD)$(COLOR_BLUE)프로젝트 초기화: $(NAME)$(COLOR_RESET)"
+	@$(PYTHON) scripts/init_project.py $(NAME)
+	@echo "$(COLOR_GREEN)✓ 초기화 완료. 'make install-dev' 후 'make ci-check'로 검증하세요.$(COLOR_RESET)"
 
 # ============================================================================
 # 개발 워크플로우 예시
