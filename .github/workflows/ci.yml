@@ -21,8 +21,11 @@ jobs:
           cache: "pip"
           cache-dependency-path: pyproject.toml
 
-      - name: Install dev dependencies
-        run: pip install -e ".[dev]"
+      - name: Create venv and install dev dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -e ".[dev]"
 
       - name: Run all checks (lint + format check + mypy + pytest + coverage)
         run: make ci-check
