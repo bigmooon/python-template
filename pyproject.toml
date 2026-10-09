@@ -21,9 +21,9 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
-    "ruff==0.8.4",          # .pre-commit-config.yaml의 ruff rev와 동일
+    "ruff==0.16.10",          # .pre-commit-config.yaml의 ruff rev와 동일
     "pre-commit>=3.8.0",
-    "commitizen==3.29.1",   # .pre-commit-config.yaml의 Commitizen rev와 동일
+    "commitizen==4.19.1",   # .pre-commit-config.yaml의 Commitizen rev와 동일
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "mypy>=1.10",
