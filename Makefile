@@ -1,6 +1,6 @@
 # ============================================================================
 # Makefile - Python 프로젝트 개발 자동화
-# Python 3.12+ 프로젝트용
+# Python 3.12–3.13 프로젝트용
 # ============================================================================
 # 사용법:
 #   make help       - 사용 가능한 명령어 목록
@@ -20,7 +20,7 @@ COLOR_BLUE    := \033[34m
 COLOR_CYAN    := \033[36m
 
 # 프로젝트 설정
-PYTHON := python3.12
+PYTHON ?= python3
 VENV := .venv
 VENV_BIN := $(VENV)/bin
 PIP := $(VENV_BIN)/pip
@@ -29,7 +29,11 @@ PYTHON_VENV := $(VENV_BIN)/python
 # 소스 디렉토리
 SRC_DIR := src
 TEST_DIR := tests
-ALL_DIRS := $(SRC_DIR) $(TEST_DIR)
+SCRIPT_DIR := scripts
+ALL_DIRS := $(SRC_DIR) $(TEST_DIR) $(SCRIPT_DIR)
+MYPY_DIRS := $(SRC_DIR) $(SCRIPT_DIR)
+COVERAGE_ARGS := --cov=$(SRC_DIR) --cov=$(SCRIPT_DIR)
+DEV_CONSTRAINTS := requirements-dev.lock
 
 # 도구 실행 경로
 RUFF := $(VENV_BIN)/ruff
@@ -43,7 +47,8 @@ COMMITIZEN := $(VENV_BIN)/cz
 
 .PHONY: help install install-dev install-hooks clean lint format \
         check ci-check validate test typecheck commit bump-version \
-        pre-commit run-all update-hooks quick-check full-check list-checks init
+        pre-commit run-all update-hooks quick-check full-check list-checks init \
+        test-integration lock-dev
 
 # ============================================================================
 # help - 사용 가능한 명령어 목록
@@ -61,6 +66,7 @@ help:
 	@echo "  make lint            - 코드 품질 검사 (자동 수정)"
 	@echo "  make format          - 코드 포매팅 (자동 정리)"
 	@echo "  make test            - 테스트 실행 (pytest + coverage)"
+	@echo "  make test-integration - 임시 프로젝트 초기화부터 CI 검사까지 검증"
 	@echo "  make typecheck       - 타입 검사 (mypy)"
 	@echo ""
 	@echo "$(COLOR_GREEN)통합 명령어:$(COLOR_RESET)"
@@ -82,6 +88,7 @@ help:
 	@echo ""
 	@echo "$(COLOR_GREEN)유지보수:$(COLOR_RESET)"
 	@echo "  make update-hooks    - pre-commit 훅 업데이트"
+	@echo "  make lock-dev        - 개발 의존성 constraints 파일 재생성 (uv 필요)"
 	@echo ""
 
 # ============================================================================
@@ -101,7 +108,7 @@ install-dev:
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)개발 환경 설치 중...$(COLOR_RESET)"
 	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
 	@$(PIP) install --upgrade pip setuptools wheel
-	@$(PIP) install -e ".[dev]"
+	@$(PIP) install -c $(DEV_CONSTRAINTS) -e ".[dev]"
 	@$(MAKE) install-hooks
 	@echo "$(COLOR_GREEN)✓ 개발 환경 설치 완료$(COLOR_RESET)"
 	@echo "$(COLOR_YELLOW)다음 명령어로 환경 활성화:$(COLOR_RESET)"
@@ -175,8 +182,8 @@ ci-check:
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)CI 검사 중...$(COLOR_RESET)"
 	@$(RUFF) check $(ALL_DIRS) --no-fix
 	@$(RUFF) format $(ALL_DIRS) --check
-	@$(VENV_BIN)/mypy $(SRC_DIR)
-	@$(VENV_BIN)/pytest --cov=$(SRC_DIR) --cov-report=term-missing --no-header -q
+	@$(VENV_BIN)/mypy $(MYPY_DIRS)
+	@$(VENV_BIN)/pytest $(COVERAGE_ARGS) --cov-report=term-missing --no-header -q
 	@echo "$(COLOR_GREEN)✓ CI 검사 통과$(COLOR_RESET)"
 
 # ============================================================================
@@ -184,15 +191,23 @@ ci-check:
 # ============================================================================
 test:
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)테스트 실행 중...$(COLOR_RESET)"
-	@$(VENV_BIN)/pytest --cov=$(SRC_DIR) --cov-report=term-missing
+	@$(VENV_BIN)/pytest $(COVERAGE_ARGS) --cov-report=term-missing
 	@echo "$(COLOR_GREEN)✓ 테스트 완료$(COLOR_RESET)"
+
+# ============================================================================
+# test-integration - 임시 복사본에서 init → install-dev → ci-check 검증
+# ============================================================================
+test-integration:
+	@echo "$(COLOR_BOLD)$(COLOR_BLUE)템플릿 초기화 통합 테스트 실행 중...$(COLOR_RESET)"
+	@$(VENV_BIN)/pytest -m integration --no-cov -q
+	@echo "$(COLOR_GREEN)✓ 초기화 통합 테스트 통과$(COLOR_RESET)"
 
 # ============================================================================
 # typecheck - 타입 검사
 # ============================================================================
 typecheck:
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)타입 검사 중...$(COLOR_RESET)"
-	@$(VENV_BIN)/mypy $(SRC_DIR)
+	@$(VENV_BIN)/mypy $(MYPY_DIRS)
 	@echo "$(COLOR_GREEN)✓ 타입 검사 완료$(COLOR_RESET)"
 
 # ============================================================================
@@ -242,6 +257,16 @@ update-hooks:
 	@echo "$(COLOR_BOLD)$(COLOR_BLUE)Pre-commit 훅 업데이트 중...$(COLOR_RESET)"
 	@$(PRE_COMMIT) autoupdate
 	@echo "$(COLOR_GREEN)✓ 훅 업데이트 완료$(COLOR_RESET)"
+
+# ============================================================================
+# lock-dev - Python 3.12–3.13/전체 플랫폼용 개발 constraints 재생성
+# ============================================================================
+lock-dev:
+	@command -v uv >/dev/null || { echo "uv가 필요합니다: https://docs.astral.sh/uv/"; exit 1; }
+	@uv pip compile pyproject.toml --extra dev --universal \
+		--no-emit-package your-project \
+		--custom-compile-command "make lock-dev" \
+		--output-file $(DEV_CONSTRAINTS)
 
 # ============================================================================
 # quick-check - commit 시뮬레이션 (pre-commit 단계 훅 전체)

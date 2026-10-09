@@ -74,14 +74,14 @@ repos:
         name: "Ruff 포매터"
 
   # ==========================================
-  # 4. 자동 수정 결과를 같은 커밋에 stage
+  # 4. 자동 수정 검토 안내
+  #    index를 변경하지 않아 부분 staging을 보존한다.
   #    (반드시 ruff/ruff-format 다음에 위치)
-  #    stdlib만 사용하므로 어떤 python3든 OK.
   # ==========================================
   - repo: local
     hooks:
-      - id: stage-fixes
-        name: "자동 수정 파일 stage"
+      - id: review-fixes
+        name: "자동 수정 검토 안내"
         entry: python3 scripts/stage_fixes.py
         language: system
         stages: [pre-commit]
@@ -116,7 +116,7 @@ repos:
 
       - id: mypy-push
         name: "mypy (push 전)"
-        entry: .venv/bin/python -m mypy src
+        entry: .venv/bin/python -m mypy src scripts
         language: system
         types: [python]
         stages: [pre-push]
