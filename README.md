@@ -148,6 +148,8 @@ Ruff와 Commitizen은 `pyproject.toml`의 CLI 버전과 `.pre-commit-config.yaml
 
 ### 2. 복제 및 초기화
 
+GitHub의 **Use this template** 버튼으로 새 저장소를 만드는 방법을 권장합니다. 직접 복제하려면 다음 명령을 사용합니다.
+
 ```bash
 git clone https://github.com/bigmooon/python-template.git my-project
 cd my-project
@@ -271,15 +273,17 @@ make test-integration
 - 기본 지원 환경은 macOS와 Linux입니다. Windows는 현재 지원 범위에 포함하지 않습니다.
 - secret 검사는 private key와 AWS credential pattern을 확인하지만 전문 secret scanner를 대체하지 않습니다.
 - 통합 테스트는 의존성을 새로 설치하므로 오프라인 환경에서는 실행할 수 없습니다.
-- GitHub Actions는 검사를 실행하지만 `main` 병합을 실제로 차단하려면 branch ruleset에서 required check를 설정해야 합니다.
-- 현재 저장소는 GitHub의 **Template repository** 옵션이 비활성화되어 있어 `git clone` 방식으로 사용합니다.
 
-저장소 관리자는 GitHub Settings에서 다음 항목을 별도로 적용할 수 있습니다.
+GitHub 저장소에는 다음 운영 설정이 적용되어 있습니다.
 
-1. Template repository 활성화
-2. `main` 변경 시 PR 필수
-3. force push와 branch 삭제 제한
-4. `Python 3.12`, `Python 3.13` CI를 required status check로 지정
+| 설정 | 상태 |
+|---|:---:|
+| Template repository | 활성화 |
+| `main` 변경 시 PR 필수 | 활성화 |
+| branch 삭제·force push 제한 | 활성화 |
+| review thread 해결 필수 | 활성화 |
+| `Python 3.12`, `Python 3.13` required checks | 활성화 |
+| 승인 인원 | 0명 — 개인 저장소에서 self-merge 가능 |
 
 ## License
 
