@@ -7,6 +7,7 @@ Python stdlib만 사용한다.
 - ``your-project`` → kebab-case 이름 (PEP 503 정규화)
 - ``your_project`` → snake_case 이름 (Python 패키지명)
 - ``src/your_project/`` 디렉토리 → ``src/<snake>/``로 이동
+- 설정·smoke test·프로젝트 안내 문서의 플레이스홀더 치환
 
 사용:
     python scripts/init_project.py my_app
@@ -63,6 +64,9 @@ def main(name: str) -> int:
     targets = [
         ROOT / "pyproject.toml",
         src_new / "__init__.py",
+        ROOT / "tests" / "test_smoke.py",
+        ROOT / "CLAUDE.md",
+        ROOT / "README.md",
     ]
     for f in targets:
         if f.exists():

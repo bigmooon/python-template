@@ -86,6 +86,7 @@ repos:
         language: system
         stages: [pre-commit]
         pass_filenames: true
+        require_serial: true
 
   # ==========================================
   # 5. Commitizen (commit-msg 단계)
