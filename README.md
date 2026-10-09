@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/bigmooon/python-template/actions/workflows/ci.yml/badge.svg)](https://github.com/bigmooon/python-template/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-3776AB?logo=python&logoColor=white)
-![Ruff](https://img.shields.io/badge/Ruff-0.8.4-D7FF64?logo=ruff&logoColor=261230)
+![Ruff](https://img.shields.io/badge/Ruff-0.16.10-D7FF64?logo=ruff&logoColor=261230)
 ![Coverage](https://img.shields.io/badge/coverage-gate%2080%25-brightgreen)
 
 Python 3.12–3.13 프로젝트를 시작할 때 패키지 구조, 품질 검사, Git hook과 CI를 함께 재사용할 수 있는 템플릿입니다. Ruff, mypy strict, pytest, coverage, pre-commit, Commitizen을 하나의 Make 워크플로우로 묶습니다.
@@ -34,10 +34,10 @@ make ci-check
 |---|---|
 | Python | `>=3.12,<3.14`; CI matrix는 3.12, 3.13 |
 | 실행 환경 | macOS/Linux, Make, POSIX shell |
-| Ruff | `src`, `tests`, `scripts`; CLI와 hook 모두 0.8.4 |
+| Ruff | `src`, `tests`, `scripts`; CLI와 hook 모두 0.16.10 |
 | mypy | `src`, `scripts`; strict mode |
 | pytest/coverage | 단위 테스트, `src`+`scripts` branch coverage 80% gate |
-| Commitizen | CLI와 commit-msg hook 모두 3.29.1 |
+| Commitizen | CLI와 commit-msg hook 모두 4.19.1 |
 | CI runner | `ubuntu-24.04`, `permissions: contents: read` |
 | 자동 의존성 갱신 | Dependabot의 pip, GitHub Actions 주간 검사 |
 | 라이선스 | MIT `LICENSE`, PEP 639 SPDX `license = "MIT"` |
