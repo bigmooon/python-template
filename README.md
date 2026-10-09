@@ -132,7 +132,7 @@ Ruff와 Commitizen은 `pyproject.toml`의 CLI 버전과 `.pre-commit-config.yaml
 | pre-commit·pre-push | 전체 hook 통과 |
 | GitHub Actions | Python 3.12·3.13 matrix 통과 |
 
-원격 검증 결과는 [GitHub Actions 실행 기록](https://github.com/bigmooon/python-template/actions/runs/37975578306)에서 확인할 수 있습니다.
+최신 원격 검증 결과는 [GitHub Actions](https://github.com/bigmooon/python-template/actions/workflows/ci.yml)에서 확인할 수 있습니다.
 
 > 85.39%는 템플릿의 초기화·hook 스크립트와 기본 패키지에 대한 현재 측정값입니다. 이 템플릿으로 생성한 애플리케이션의 품질이나 향후 커버리지를 보장하지 않습니다.
 
