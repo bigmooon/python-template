@@ -3,78 +3,237 @@
 [![CI](https://github.com/bigmooon/python-template/actions/workflows/ci.yml/badge.svg)](https://github.com/bigmooon/python-template/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-3776AB?logo=python&logoColor=white)
 ![Ruff](https://img.shields.io/badge/Ruff-0.16.10-D7FF64?logo=ruff&logoColor=261230)
-![Coverage](https://img.shields.io/badge/coverage-gate%2080%25-brightgreen)
+![mypy](https://img.shields.io/badge/mypy-strict-2A6DB2)
+![Coverage](https://img.shields.io/badge/coverage-85.39%25-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-Python 3.12–3.13 프로젝트를 시작할 때 패키지 구조, 품질 검사, Git hook과 CI를 함께 재사용할 수 있는 템플릿입니다. Ruff, mypy strict, pytest, coverage, pre-commit, Commitizen을 하나의 Make 워크플로우로 묶습니다.
+Python 프로젝트를 시작할 때마다 품질 도구와 Git workflow를 다시 조립하지 않도록 만든 **Python 3.12–3.13 프로젝트 템플릿**입니다.
 
-## 바로 시작하기
+프로젝트명 초기화부터 lint, format, type check, test, coverage, commit 규칙과 CI까지 하나의 Make workflow로 연결합니다. 템플릿 자체도 단위 테스트와 실제 초기화 통합 테스트로 검증합니다.
 
-필요한 환경은 Git, Make, POSIX shell(macOS/Linux), 그리고 `python3`가 Python 3.12 또는 3.13을 가리키는 환경입니다. 기본 명령과 다른 실행 파일을 써야 하면 `PYTHON=python3.12`처럼 오버라이드하면 됩니다.
+## 프로젝트 개요
+
+| 항목 | 내용 |
+|---|---|
+| 목적 | Python 프로젝트의 초기 구조와 품질 기준을 반복해서 설정하는 비용 절감 |
+| 대상 | 개인 프로젝트와 소규모 팀 프로젝트를 빠르게 시작하려는 Python 개발자 |
+| 지원 버전 | Python `>=3.12,<3.14`; CI에서 3.12·3.13 검증 |
+| 지원 환경 | macOS·Linux, Make, POSIX shell |
+| 핵심 도구 | Ruff, mypy, pytest, coverage, pre-commit, Commitizen |
+| 자동화 | Git hook, GitHub Actions, Dependabot, 개발 의존성 constraints |
+| 품질 기준 | Ruff·mypy strict·테스트 통과, branch coverage 80% 이상 |
+
+## 해결하려는 문제
+
+새 프로젝트마다 lint, format, type check와 test 설정을 따로 구성하면 다음 문제가 반복됩니다.
+
+- 로컬과 CI의 명령·도구 버전이 달라 같은 코드가 한쪽에서만 실패함
+- 오류를 commit이나 push 이후에 발견해 수정 비용이 커짐
+- 자동 포맷 과정에서 부분 staging한 변경이 의도치 않게 섞일 수 있음
+- 템플릿 초기화는 성공했지만 이름이 남거나 기본 테스트가 깨질 수 있음
+- 최소 버전 의존성만 선언하면 설치 시점에 따라 개발 환경이 달라짐
+
+이 저장소는 검사를 `commit → push → CI`로 나누고, 프로젝트 생성 과정 자체까지 테스트 대상으로 포함합니다.
+
+## 핵심 기능
+
+| 영역 | 구현 내용 |
+|---|---|
+| 프로젝트 초기화 | `snake_case` import 이름과 `kebab-case` 배포 이름 생성, 패키지·설정·테스트·문서 일괄 치환 |
+| 코드 품질 | `src`, `tests`, `scripts`를 Ruff로 검사하고 포맷 |
+| 타입 안정성 | `src`, `scripts`에 mypy strict 적용 |
+| 테스트 | 초기화·이름 검증·충돌 처리·부분 staging 보호 단위 테스트 |
+| 통합 검증 | 임시 Git 저장소에서 `init → install-dev → ci-check` 전체 workflow 실행 |
+| 커버리지 | `src`와 `scripts`의 branch coverage 80% gate |
+| Git workflow | pre-commit, commit-msg, pre-push 단계별 검사 |
+| 의존성 관리 | universal constraints 파일과 Dependabot 주간 업데이트 |
+| 원격 검증 | Python 3.12·3.13 matrix, 읽기 전용 token, Ubuntu 24.04 runner |
+
+## 품질 게이트 구조
+
+```mermaid
+flowchart LR
+    A[코드 변경] --> B[git commit]
+    B --> C[pre-commit]
+    C --> C1[파일·보안 검사]
+    C --> C2[Ruff lint·format]
+    C --> C3[부분 staging 보호]
+    B --> D[commit-msg]
+    D --> D1[Commitizen 규칙]
+
+    E[git push] --> F[pre-push]
+    F --> F1[pytest 빠른 실패]
+    F --> F2[mypy strict]
+
+    G[push 또는 PR] --> H[GitHub Actions]
+    H --> H1[Python 3.12]
+    H --> H2[Python 3.13]
+    H1 --> I[ci-check + 통합 테스트]
+    H2 --> I
+```
+
+### 단계별 책임
+
+| 단계 | 목적 | 실행 내용 |
+|---|---|---|
+| pre-commit | 빠르게 수정 가능한 문제를 commit 전에 발견 | 파일 무결성, 보안 패턴, 대용량 파일, Ruff |
+| commit-msg | 변경 이력을 일정한 형식으로 유지 | Conventional Commits 검증 |
+| pre-push | 원격 전송 전 회귀 오류 확인 | 빠른 pytest, mypy strict |
+| CI | 독립 환경에서 전체 품질 기준 재검증 | Ruff, mypy, 단위 테스트, coverage, 초기화 통합 테스트 |
+
+## 주요 설계 결정
+
+### 빠른 검사는 앞에, 무거운 검사는 뒤에
+
+commit 단계에는 변경 파일 중심의 검사만 실행합니다. 프로젝트 전체 테스트와 타입 검사는 push 단계로 보내고, 의존성 설치를 포함하는 초기화 통합 테스트는 CI에서 수행합니다. 검사의 깊이는 유지하면서 일상적인 feedback 시간은 짧게 가져가기 위한 구성입니다.
+
+### 자동 수정 hook이 Git index를 바꾸지 않음
+
+부분 staging 상태에서 hook이 `git add`를 실행하면 pre-commit이 임시로 숨긴 unstaged hunk와 충돌할 수 있습니다. `stage_fixes.py`는 Ruff가 staged 파일을 수정했을 때 commit을 중단하고 검토할 파일만 안내합니다.
+
+```bash
+git diff
+git diff --cached
+git add -p
+git commit -m "feat: add parser"
+```
+
+같은 줄에 staged·unstaged 변경이 공존하는 상황도 실제 Git 저장소를 생성해 검증합니다. 테스트는 hook이 실패하면서도 index와 worktree의 변경을 각각 그대로 보존하는지 확인합니다.
+
+### 템플릿도 하나의 제품으로 테스트
+
+설정 파일이 존재하는지만 검사하지 않습니다. 통합 테스트가 저장소를 임시 디렉터리에 복사하고 다음 사용자 흐름을 직접 실행합니다.
+
+```text
+프로젝트 복사 → Git 초기화 → 이름 치환 → 개발 환경 설치
+→ 정적 검사와 단위 테스트 → 부분 staging 충돌 검증
+```
+
+### CLI와 Git hook 버전을 함께 관리
+
+Ruff와 Commitizen은 `pyproject.toml`의 CLI 버전과 `.pre-commit-config.yaml`의 hook revision을 동일하게 유지합니다. 로컬 직접 실행과 hook의 결과가 달라지는 version drift를 줄이기 위한 선택입니다.
+
+### 재현 가능한 개발 환경
+
+`requirements-dev.lock`은 Python 3.12–3.13과 주요 플랫폼을 위한 universal constraints 파일입니다. 설치에는 pip를 사용하고 lock 재생성에만 uv를 사용해, 일반 사용자의 필수 도구를 늘리지 않으면서 의존성 해석 결과를 고정합니다.
+
+## 검증 결과
+
+2026-10-10, macOS와 Python 3.12.12 환경에서 직접 다시 실행한 결과입니다.
+
+| 검증 항목 | 결과 |
+|---|:---:|
+| Ruff lint·format | Python 파일 9개 통과 |
+| mypy strict | 소스·스크립트 3개 파일, 오류 0건 |
+| 단위 테스트 | 17개 통과 |
+| 초기화 통합 테스트 | 1개 통과 |
+| branch coverage | 85.39% |
+| coverage gate | 기준 80% 통과 |
+| pre-commit·pre-push | 전체 hook 통과 |
+| GitHub Actions | Python 3.12·3.13 matrix 통과 |
+
+원격 검증 결과는 [GitHub Actions 실행 기록](https://github.com/bigmooon/python-template/actions/runs/37975578306)에서 확인할 수 있습니다.
+
+> 85.39%는 템플릿의 초기화·hook 스크립트와 기본 패키지에 대한 현재 측정값입니다. 이 템플릿으로 생성한 애플리케이션의 품질이나 향후 커버리지를 보장하지 않습니다.
+
+## 빠른 시작
+
+### 1. 요구사항
+
+- Python 3.12 또는 3.13
+- Git
+- Make와 POSIX shell(macOS 또는 Linux)
+
+`python3`가 지원 버전을 가리켜야 합니다. Makefile과 pre-commit hook은 이 실행 환경을 공통으로 사용합니다.
+
+### 2. 복제 및 초기화
 
 ```bash
 git clone https://github.com/bigmooon/python-template.git my-project
 cd my-project
 
 make init NAME=my_project
-make install-dev
-make ci-check
 ```
 
-`NAME`은 Python 패키지에 쓸 수 있는 `snake_case`를 권장합니다. `make init`은 다음 변경을 적용합니다.
+`NAME`은 Python package에 사용할 `snake_case` 형식을 권장합니다. `make init`은 다음 항목을 변경합니다.
 
-- `src/your_project/`를 새 패키지명으로 이동
-- 배포 이름은 `kebab-case`, import 이름은 `snake_case`로 치환
-- `pyproject.toml`, 기본 테스트, README, Makefile, lock 파일의 플레이스홀더 갱신
+1. `src/your_project/`를 새 package 이름으로 이동
+2. 배포 이름을 `kebab-case`, import 이름을 `snake_case`로 변환
+3. `pyproject.toml`, test, README, Makefile, lock 파일의 placeholder 치환
+4. 기존 대상 package와 충돌하면 덮어쓰지 않고 종료
 
-`make install-dev`는 `.venv`를 만들고 `requirements-dev.lock`을 constraints로 사용해 개발 의존성을 설치한 뒤 pre-commit, commit-msg, pre-push hook을 설치합니다.
+### 3. 개발 환경 설치
 
-## 지원 범위와 검사 범위
+```bash
+make install-dev
+```
 
-| 항목 | 현재 설정 |
+`.venv`와 고정된 개발 의존성을 준비하고 pre-commit, commit-msg, pre-push hook을 설치합니다.
+
+### 4. 설치 검증
+
+```bash
+make ci-check
+make test-integration
+```
+
+`make test-integration`은 새로운 임시 환경에 의존성을 다시 설치하므로 네트워크 연결이 필요하고 일반 단위 테스트보다 오래 걸립니다.
+
+## 일상적인 개발 흐름
+
+```bash
+# 코드 작성 후 전체 로컬 검증
+make validate
+
+# Conventional Commit 작성
+git add src tests
+git commit -m "feat(parser): add config parser"
+
+# pre-push에서 pytest와 mypy 실행
+git push
+```
+
+대화형 Commitizen을 사용하려면 다음 명령을 실행합니다.
+
+```bash
+make commit
+```
+
+## Make 명령어
+
+| 명령어 | 설명 |
 |---|---|
-| Python | `>=3.12,<3.14`; CI matrix는 3.12, 3.13 |
-| 실행 환경 | macOS/Linux, Make, POSIX shell |
-| Ruff | `src`, `tests`, `scripts`; CLI와 hook 모두 0.16.10 |
-| mypy | `src`, `scripts`; strict mode |
-| pytest/coverage | 단위 테스트, `src`+`scripts` branch coverage 80% gate |
-| Commitizen | CLI와 commit-msg hook 모두 4.19.1 |
-| CI runner | `ubuntu-24.04`, `permissions: contents: read` |
-| 자동 의존성 갱신 | Dependabot의 pip, GitHub Actions 주간 검사 |
-| 라이선스 | MIT `LICENSE`, PEP 639 SPDX `license = "MIT"` |
-
-CI는 Python 3.12와 3.13 각각에서 constraints 파일로 환경을 설치하고 `make ci-check`와 `make test-integration`을 순서대로 실행합니다.
-
-## 사용 가능한 명령
-
-| 명령 | 동작 |
-|---|---|
-| `make init NAME=my_app` | 프로젝트와 패키지 플레이스홀더 치환 |
-| `make install-dev` | 고정 개발 환경과 Git hook 설치 |
-| `make lint` | `src`, `tests`, `scripts`에 Ruff 자동 수정 |
-| `make format` | `src`, `tests`, `scripts` 포매팅 |
+| `make init NAME=my_app` | 프로젝트·package 이름 초기화 |
+| `make install-dev` | 가상환경, 고정 개발 의존성, Git hook 설치 |
+| `make lint` | Ruff 검사와 자동 수정 |
+| `make format` | Ruff format 적용 |
 | `make typecheck` | `src`, `scripts` mypy strict 검사 |
-| `make test` | 단위 테스트와 80% coverage gate |
-| `make ci-check` | 자동 수정 없이 Ruff, mypy, 단위 테스트, coverage 검증 |
-| `make test-integration` | 임시 Git 저장소에서 `init → install-dev → ci-check` 검증 |
-| `make quick-check` | pre-commit 단계의 모든 hook 실행 |
-| `make full-check` | pre-commit과 pre-push 단계 모두 실행 |
-| `make commit` | Commitizen 대화형 Conventional Commit 생성 |
-| `make lock-dev` | uv로 공통 개발 constraints 재생성 |
-| `make update-hooks` | pre-commit repository revision 갱신 |
+| `make test` | 단위 테스트와 branch coverage 80% gate |
+| `make test-integration` | 초기화부터 품질 검사까지 end-to-end 검증 |
+| `make validate` | lint, format, test, typecheck 실행 |
+| `make quick-check` | pre-commit 단계 simulation |
+| `make full-check` | pre-commit·pre-push 단계 simulation |
+| `make ci-check` | 자동 수정 없는 전체 CI 검사 |
+| `make commit` | Commitizen 대화형 commit |
+| `make bump-version` | Conventional Commit 기반 version 증가와 tag 생성 |
+| `make lock-dev` | uv로 개발 constraints 재생성 |
+| `make update-hooks` | pre-commit repository revision 업데이트 |
+| `make clean` | Python·검사 도구 cache 제거 |
 
-통합 테스트는 설치를 반복하므로 기본 pytest 실행에서는 제외됩니다. CI와 `make test-integration`이 이 테스트를 명시적으로 실행합니다.
+## Conventional Commits
 
-## Git hook과 부분 staging 보호
+```text
+feat(auth): add login endpoint
+fix(parser): handle empty input
+docs: update quick start
+feat!: change public API
+```
 
-pre-commit 단계는 파일·YAML·TOML·JSON 무결성, 충돌 마커, 디버그 구문, private key/AWS 자격 증명, 대용량 파일, Ruff lint/format을 검사합니다. commit-msg는 Commitizen, pre-push는 pytest와 mypy를 실행합니다.
+허용 타입은 `feat`, `fix`, `docs`, `refactor`, `chore`, `revert`, `perf`입니다. Commitizen 설정상 `feat`는 MINOR, `fix`와 `perf`는 PATCH version 증가에 사용되며 호환성을 깨는 변경은 `!`로 표시합니다.
 
-Ruff가 파일을 수정하면 hook은 실패하고 커밋을 중단합니다. `stage_fixes.py`는 수정된 파일과 `git add -p` 안내를 보여주지만 index를 절대 변경하지 않습니다. hook 실행 중 자동으로 `git add`하면 pre-commit이 임시로 숨긴 unstaged hunk와 충돌해 사용자 변경을 복원하지 못할 수 있기 때문입니다. `git diff`와 `git diff --cached`를 확인한 뒤 원하는 hunk만 수동으로 stage하세요.
+## 의존성 업데이트
 
-통합 테스트는 같은 줄에 staged·unstaged 변경이 동시에 있는 최악의 충돌 상황에서 실제 pre-commit 훅을 실행합니다. hook은 코드 1로 실패하고, staged 내용과 unstaged 내용이 각각 그대로 남아야 테스트가 통과합니다.
-
-## 의존성 고정과 갱신
-
-`requirements-dev.lock`은 Python 3.12–3.13과 주요 플랫폼을 위한 universal constraints 파일입니다. 일반 사용자는 uv가 필요 없고, 의존성을 변경하는 유지보수자만 uv를 설치한 뒤 다음을 실행합니다.
+Dependabot이 매주 pip과 GitHub Actions 업데이트를 확인합니다. 개발 의존성을 변경한 뒤에는 constraints와 품질 검사를 함께 갱신합니다.
 
 ```bash
 make lock-dev
@@ -83,50 +242,45 @@ make ci-check
 make test-integration
 ```
 
-Ruff와 Commitizen을 올릴 때는 `pyproject.toml`의 CLI 버전과 `.pre-commit-config.yaml`의 hook revision을 함께 바꾸어야 합니다. Dependabot은 pip과 GitHub Actions를 주간으로 점검하지만 pre-commit repository revision은 `make update-hooks`로 관리합니다.
+`make lock-dev`에만 [uv](https://docs.astral.sh/uv/)가 필요합니다. Ruff와 Commitizen을 변경할 때는 CLI dependency와 pre-commit hook revision을 같은 버전으로 맞춥니다.
 
-## 현재 검증 결과
-
-2026-10-10에 macOS, Python 3.12.12에서 이 저장소의 복사본으로 다음을 확인했습니다. 아래는 GitHub Actions의 원격 실행 결과가 아니라 로컬 실행 결과입니다.
-
-| 검증 | 결과 |
-|---|---|
-| `make ci-check` | 통과; Ruff 9개 Python 파일, mypy 3개 소스 파일 |
-| 단위 테스트 | 17개 통과, 1개 integration marker 제외 |
-| branch coverage | 85.39%; 기준 80% 통과 |
-| `make full-check` | pre-commit·pre-push hook 모두 통과 |
-| `make test-integration` | 임시 프로젝트 workflow와 실제 부분-staging hook 충돌 테스트 1개 통과 |
-
-Python 3.13은 GitHub Actions matrix에서 검증되도록 설정되었습니다. 저장소의 최신 원격 상태는 [GitHub Actions](https://github.com/bigmooon/python-template/actions/workflows/ci.yml)에서 확인하세요.
-
-## GitHub 저장소에서 별도로 해야 할 일
-
-다음 항목은 코드 변경으로 적용되지 않으며, 저장소 관리자가 GitHub 설정에서 별도로 구성해야 합니다.
-
-1. **Template repository**: Settings → General에서 Template repository를 활성화합니다.
-2. **Branch ruleset**: `main`을 대상으로 PR 필수, force push/삭제 제한, CI required status check를 설정합니다.
-3. **Required checks**: matrix job의 `Python 3.12`와 `Python 3.13` 모두를 성공해야 merge할 수 있도록 선택합니다. 처음에는 workflow를 한 번 실행해야 check 이름이 선택 목록에 나타날 수 있습니다.
-
-CI workflow, read-only token permission, Dependabot 설정은 이 저장소에 파일로 포함됩니다. ruleset과 Template repository 플래그는 포함되지 않습니다.
-
-## 구조
+## 저장소 구조
 
 ```text
 .
 ├── .github/
-│   ├── dependabot.yml
-│   └── workflows/ci.yml
+│   ├── dependabot.yml              # 의존성 자동 업데이트
+│   └── workflows/ci.yml            # Python 3.12·3.13 matrix CI
 ├── scripts/
-│   ├── init_project.py
-│   └── stage_fixes.py
-├── src/your_project/
+│   ├── init_project.py             # 프로젝트 이름 초기화
+│   └── stage_fixes.py              # 안전한 자동 수정 검토 안내
+├── src/your_project/               # 초기화 시 변경되는 package
 ├── tests/
+│   ├── test_init_project.py        # 초기화 단위 테스트
+│   ├── test_stage_fixes.py         # 부분 staging 보호 테스트
+│   ├── test_template_integration.py # 사용자 workflow 통합 테스트
+│   └── test_smoke.py               # package 기준선 테스트
 ├── LICENSE
-├── Makefile
-├── pyproject.toml
-└── requirements-dev.lock
+├── Makefile                        # 개발 명령 진입점
+├── pyproject.toml                  # package·도구 설정
+└── requirements-dev.lock           # 개발 의존성 constraints
 ```
+
+## 현재 범위와 GitHub 설정
+
+- 기본 지원 환경은 macOS와 Linux입니다. Windows는 현재 지원 범위에 포함하지 않습니다.
+- secret 검사는 private key와 AWS credential pattern을 확인하지만 전문 secret scanner를 대체하지 않습니다.
+- 통합 테스트는 의존성을 새로 설치하므로 오프라인 환경에서는 실행할 수 없습니다.
+- GitHub Actions는 검사를 실행하지만 `main` 병합을 실제로 차단하려면 branch ruleset에서 required check를 설정해야 합니다.
+- 현재 저장소는 GitHub의 **Template repository** 옵션이 비활성화되어 있어 `git clone` 방식으로 사용합니다.
+
+저장소 관리자는 GitHub Settings에서 다음 항목을 별도로 적용할 수 있습니다.
+
+1. Template repository 활성화
+2. `main` 변경 시 PR 필수
+3. force push와 branch 삭제 제한
+4. `Python 3.12`, `Python 3.13` CI를 required status check로 지정
 
 ## License
 
-MIT. 전문은 [LICENSE](LICENSE)에 있습니다.
+[MIT License](LICENSE)
