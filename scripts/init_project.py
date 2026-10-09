@@ -49,12 +49,12 @@ def replace_in_file(path: Path, snake: str, kebab: str) -> None:
         path.write_text(new, encoding="utf-8")
 
 
-def main(name: str) -> int:
+def main(name: str, *, root: Path = ROOT) -> int:
     snake = to_snake(name)
     kebab = to_kebab(name)
 
-    src_old = ROOT / "src" / "your_project"
-    src_new = ROOT / "src" / snake
+    src_old = root / "src" / "your_project"
+    src_new = root / "src" / snake
     if src_old.exists() and src_old != src_new:
         if src_new.exists():
             print(f"오류: {src_new}가 이미 존재합니다.", file=sys.stderr)
@@ -62,11 +62,13 @@ def main(name: str) -> int:
         shutil.move(str(src_old), str(src_new))
 
     targets = [
-        ROOT / "pyproject.toml",
+        root / "pyproject.toml",
         src_new / "__init__.py",
-        ROOT / "tests" / "test_smoke.py",
-        ROOT / "CLAUDE.md",
-        ROOT / "README.md",
+        root / "tests" / "test_smoke.py",
+        root / "CLAUDE.md",
+        root / "README.md",
+        root / "Makefile",
+        root / "requirements-dev.lock",
     ]
     for f in targets:
         if f.exists():

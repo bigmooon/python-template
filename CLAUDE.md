@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Python 3.12 프로젝트 템플릿. Ruff(린터+포매터), pre-commit 훅, Commitizen(Conventional Commits)을 통한 자동화된 코드 품질 검사 시스템.
+Python 3.12–3.13 프로젝트 템플릿. Ruff(린터+포매터), pre-commit 훅, Commitizen(Conventional Commits)을 통한 자동화된 코드 품질 검사 시스템.
 
 ## Commands
 
@@ -27,6 +27,9 @@ make validate
 # CI용 검사 (수정 없이 검증만)
 make ci-check
 
+# 임시 프로젝트에서 init → install-dev → ci-check 검증
+make test-integration
+
 # 테스트 (pytest + coverage)
 make test
 
@@ -45,14 +48,16 @@ make clean
 
 Ruff 직접 실행:
 ```bash
-.venv/bin/ruff check src tests --fix
-.venv/bin/ruff format src tests
+.venv/bin/ruff check src tests scripts --fix
+.venv/bin/ruff format src tests scripts
 ```
 
 ## Architecture
 
 - `src/your_project/` — 소스 코드 패키지 (TODO: 프로젝트명으로 변경)
-- `tests/` — 테스트 디렉토리
+- `tests/` — 단위 테스트와 템플릿 초기화 통합 테스트
+- `scripts/` — 프로젝트 초기화와 fail-only 자동 수정 검토 안내
+- `requirements-dev.lock` — Python 3.12–3.13 공통 개발 constraints
 - `pyproject.toml` — 프로젝트 메타데이터, Ruff 설정, Commitizen 설정 통합
 - `.pre-commit-config.yaml` — Git 훅 (파일 검사, Ruff, Commitizen)
 - `Makefile` — 개발 자동화 명령어

@@ -1,24 +1,29 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "your-project"  # TODO: 프로젝트 이름으로 변경
 version = "0.1.0"
-description = "Python 3.12 자동화 검사 시스템"
+description = "Reusable Python 3.12–3.13 project template with automated quality checks"
 readme = "README.md"
-requires-python = ">=3.12"
-license = {text = "MIT"}
+requires-python = ">=3.12,<3.14"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{name = "Junghee Im", email = "imjion.dev@gmail.com"}]
 keywords = ["automation", "lint", "format", "testing"]
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 
 dependencies = []
 
 [project.optional-dependencies]
 dev = [
-    "ruff==0.8.4",          # .pre-commit-config.yaml의 ruff rev와 정확히 동일하게 핀
+    "ruff==0.8.4",          # .pre-commit-config.yaml의 ruff rev와 동일
     "pre-commit>=3.8.0",
-    "commitizen>=3.29.0",
+    "commitizen==3.29.1",   # .pre-commit-config.yaml의 Commitizen rev와 동일
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "mypy>=1.10",
@@ -26,7 +31,7 @@ dev = [
 
 [tool.ruff]
 target-version = "py312"
-src = ["src", "tests"]
+src = ["src", "tests", "scripts"]
 line-length = 88
 
 [tool.ruff.lint]
@@ -53,7 +58,7 @@ unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"tests/**/*.py" = ["S101", "T20"]
+"tests/**/*.py" = ["S101", "S603", "S607", "T20"]
 # scripts/는 CLI 도구이므로 print/subprocess 사용 허용
 "scripts/**/*.py" = ["T20", "S603", "S607"]
 
@@ -70,12 +75,15 @@ skip-magic-trailing-comma = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "--strict-markers --strict-config -v"
+addopts = "--strict-markers --strict-config -m 'not integration' -v"
+markers = [
+    "integration: creates a temporary project and exercises its Make workflow",
+]
 # coverage는 [tool.coverage.*]에서 별도 관리.
 # Makefile의 test/ci-check 타겟이 명시적으로 --cov를 부착한다.
 
 [tool.coverage.run]
-source = ["src"]
+source = ["src", "scripts"]
 branch = true
 
 [tool.coverage.report]
